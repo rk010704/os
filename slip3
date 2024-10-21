@@ -1,0 +1,176 @@
+Q.1 Write the simulation program to implement demand paging and show the page 
+ scheduling and total number of page faults according to the LRU (using 
+ counter method) page replacement algorithm. Assume the memory of n 
+ frames. 
+ Reference String : 3,5,7,2,5,1,2,3,1,3,5,3,1,6,2
+solution:-
+
+
+#include <stdio.h>
+#define MAX 100
+int findLRU(int time[], int n) {
+int min = time[0], minIndex = 0;
+for (int i = 1; i < n; i++) {
+if (time[i] < min) {
+min = time[i];
+minIndex = i;
+ }
+ }
+return minIndex;
+}
+int main() {
+int frames[MAX], time[MAX], pages[MAX], page_faults = 0, n, page_count, counter = 0;
+printf("Enter the number of frames: ");
+scanf("%d", &n);
+printf("Enter the number of pages in the reference string: ");
+scanf("%d", &page_count);
+printf("Enter the reference string: ");
+for (int i = 0; i < page_count; i++) {
+scanf("%d", &pages[i]);
+}
+for (int i = 0; i < n; i++) {
+frames[i] = -1; // Initialize frames as empty
+}
+for (int i = 0; i < page_count; i++) {
+int page = pages[i], found = 0;
+for (int j = 0; j < n; j++) {
+if (frames[j] == page) {
+found = 1;
+time[j] = ++counter;
+break;
+}
+}
+if (!found) {
+int index;
+if (i < n) {
+index = i; 
+ } else {
+index = findLRU(time, n); // Find LRU page to replace
+}
+frames[index] = page;
+time[index] = ++counter;
+page_faults++;
+printf("Page %d loaded into frame. Current frames: ", page);
+for (int j = 0; j < n; j++) {
+if (frames[j] != -1) {
+printf("%d ", frames[j]);
+} else {
+printf("- ");
+}
+}
+printf("\n");
+}
+}
+printf("Total page faults: %d\n", page_faults);
+return 0;
+}
+
+ 
+ Q.2 Write a programto implement the toy shell. It should display the command 
+ prompt “myshell$”. Tokenize the command line and execute the given 
+ command by creating the child process. Additionally it should interpret the 
+ following commands. 
+ count c filename :- To print number of characters in the file.
+ count w filename :- To print number of words in the file.
+ count l filename :- To print number of lines in the file
+
+ 
+ solution:-
+
+ #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <ctype.h>
+#define MAX 100
+void count_chars(char *filename) {
+FILE *file = fopen(filename, "r");
+if (file == NULL) {
+perror("Error opening file");
+return;
+}
+int char_count = 0;
+char ch;
+while ((ch = fgetc(file)) != EOF) {
+ char_count++;
+ }
+fclose(file);
+ printf("Number of characters: %d\n", char_count);
+void count_words(char *filename) {
+FILE *file = fopen(filename, "r");
+if (file == NULL) {
+perror("Error opening file");
+return;
+}
+int word_count = 0;
+char ch, prev = ' ';
+while ((ch = fgetc(file)) != EOF) {
+if (isspace(ch) && !isspace(prev)) {
+word_count++;
+}
+prev = ch;
+}
+if (!isspace(prev)) {
+word_count++;
+}
+fclose(file);
+printf("Number of words: %d\n", word_count);
+}
+void count_lines(char *filename) {
+FILE *file = fopen(filename, "r");
+if (file == NULL) {
+perror("Error opening file");
+return;
+}
+int line_count = 0;
+char ch;
+ while ((ch = fgetc(file)) != EOF) {
+if (ch == '\n') {
+line_count++;
+}
+}
+fclose(file);
+printf("Number of lines: %d\n", line_count);
+}
+int main() {
+char input[MAX];
+char *args[MAX];
+while (1) {
+printf("myshell$ ");
+fgets(input, MAX, stdin);
+input[strlen(input) - 1] = '\0';
+int i = 0;
+args[i] = strtok(input, " ");
+while (args[i] != NULL) {
+i++;
+args[i] = strtok(NULL, " ");
+}
+if (args[0] == NULL) {
+continue;
+}
+if (strcmp(args[0], "exit") == 0) {
+break;
+} else if (strcmp(args[0], "count") == 0 && args[1] != NULL && args[2] != NULL) {
+if (strcmp(args[1], "c") == 0) {
+count_chars(args[2]);
+} else if (strcmp(args[1], "w") == 0) {
+count_words(args[2]);
+} else if (strcmp(args[1], "l") == 0) {
+count_lines(args[2]);
+} else {
+printf("Invalid count option.\n");
+}
+} else {
+pid_t pid = fork();
+if (pid == 0) {
+execvp(args[0], args);
+perror("Error executing command");
+exit(1);
+} else {
+wait(NULL);
+ }
+}
+}
+ return 0;
+}
