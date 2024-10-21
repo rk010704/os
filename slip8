@@ -1,0 +1,367 @@
+Q.1 Write the simulation program for demand paging and show the page 
+ scheduling and total number of page faults according the LRU page 
+ replacement algorithm. Assume the memory of n frames.
+Reference String : 8, 5, 7, 8, 5, 7, 2, 3, 7, 3, 5, 9, 4, 6, 2 
+solution:-
+
+
+#include <stdio.h>
+
+
+
+#define MAX 100
+
+
+
+int findLRU(int frames[], int n, int time[], int currentIndex) {
+
+    int lruIndex = 0, minTime = time[0];
+
+    for (int i = 1; i < n; i++) {
+
+        if (time[i] < minTime) {
+
+            minTime = time[i];
+
+            lruIndex = i;
+
+        }
+
+    }
+
+    return lruIndex;
+
+}
+
+
+
+int main() {
+
+    int frames[MAX], ref[MAX], time[MAX];
+
+    int page_faults = 0, n, ref_len;
+
+
+
+    printf("Enter the number of frames: ");
+
+    scanf("%d", &n);
+
+
+
+    printf("Enter the number of pages in the reference string: ");
+
+    scanf("%d", &ref_len);
+
+
+
+    printf("Enter the reference string: ");
+
+    for (int i = 0; i < ref_len; i++) {
+
+        scanf("%d", &ref[i]);
+
+    }
+
+
+
+    for (int i = 0; i < n; i++) {
+
+        frames[i] = -1; // Initialize frames to -1 (empty)
+
+        time[i] = 0;    // Initialize time for LRU tracking
+
+    }
+
+
+
+    for (int i = 0; i < ref_len; i++) {
+
+        int page = ref[i], found = 0;
+
+
+
+        for (int j = 0; j < n; j++) {
+
+            if (frames[j] == page) {
+
+                found = 1; // Page hit
+
+                time[j] = i; // Update the time of the page
+
+                break;
+
+            }
+
+        }
+
+
+
+        if (!found) {
+
+            int lruIndex;
+
+            for (int j = 0; j < n; j++) {
+
+                if (frames[j] == -1) {
+
+                    lruIndex = j; // Empty frame found
+
+                    break;
+
+                }
+
+                if (j == n - 1) {
+
+                    lruIndex = findLRU(frames, n, time, i);
+
+                }
+
+            }
+
+            frames[lruIndex] = page; // Replace the page
+
+            time[lruIndex] = i;      // Update the time for the replaced page
+
+            page_faults++;
+
+
+
+            printf("Page %d loaded. Current frames: ", page);
+
+            for (int j = 0; j < n; j++) {
+
+                if (frames[j] != -1) {
+
+                    printf("%d ", frames[j]);
+
+                } else {
+
+                    printf("- ");
+
+                }
+
+            }
+
+            printf("\n");
+
+        }
+
+    }
+
+
+
+    printf("Total page faults: %d\n", page_faults);
+
+
+
+    return 0;
+
+}
+
+
+Q.2 Write a programto implement the shell. It should display the command prompt 
+ “myshell$”. Tokenize the command line and execute the given command by 
+ creating the child process. Additionally it should interpret the following 
+ commands. 
+ myshell$ search f filename pattern :- To display first occurrence of 
+ pattern in the file.
+ myshell$ search c filename pattern :- To count the number of occurrence 
+ of pattern in the file.
+solution:-
+
+#include <stdio.h>
+
+#include <stdlib.h>
+
+#include <string.h>
+
+#include <unistd.h>
+
+#include <sys/wait.h>
+
+
+
+#define MAX 1024
+
+
+
+void search_first(const char *filename, const char *pattern) {
+
+    FILE *file = fopen(filename, "r");
+
+    if (file == NULL) {
+
+        perror("Error opening file");
+
+        return;
+
+    }
+
+
+
+    char line[MAX];
+
+    int line_number = 1;
+
+
+
+    while (fgets(line, sizeof(line), file) != NULL) {
+
+        if (strstr(line, pattern) != NULL) {
+
+            printf("First occurrence of '%s' found at line %d: %s", pattern, line_number, line);
+
+            fclose(file);
+
+            return;
+
+        }
+
+        line_number++;
+
+    }
+
+
+
+    printf("Pattern '%s' not found in the file.\n", pattern);
+
+    fclose(file);
+
+}
+
+
+
+void count_occurrences(const char *filename, const char *pattern) {
+
+    FILE *file = fopen(filename, "r");
+
+    if (file == NULL) {
+
+        perror("Error opening file");
+
+        return;
+
+    }
+
+
+
+    char line[MAX];
+
+    int count = 0;
+
+
+
+    while (fgets(line, sizeof(line), file) != NULL) {
+
+        char *ptr = line;
+
+        while ((ptr = strstr(ptr, pattern)) != NULL) {
+
+            count++;
+
+            ptr++;
+
+        }
+
+    }
+
+
+
+    printf("Pattern '%s' found %d times in the file.\n", pattern, count);
+
+    fclose(file);
+
+}
+
+
+
+int main() {
+
+    char input[MAX];
+
+    char *args[MAX];
+
+
+
+    while (1) {
+
+        printf("myshell$ ");
+
+        fgets(input, MAX, stdin);
+
+        input[strcspn(input, "\n")] = 0;
+
+
+
+        int i = 0;
+
+        args[i] = strtok(input, " ");
+
+        while (args[i] != NULL) {
+
+            i++;
+
+            args[i] = strtok(NULL, " ");
+
+        }
+
+
+
+        if (args[0] == NULL) {
+
+            continue;
+
+        }
+
+
+
+        if (strcmp(args[0], "exit") == 0) {
+
+            break;
+
+        } else if (strcmp(args[0], "search") == 0 && args[1] != NULL && args[2] != NULL) {
+
+            if (strcmp(args[1], "f") == 0) {
+
+                search_first(args[2], args[3]);
+
+            } else if (strcmp(args[1], "c") == 0) {
+
+                count_occurrences(args[2], args[3]);
+
+            } else {
+
+                printf("Invalid search option. Use 'f' for first occurrence or 'c' for count.\n");
+
+            }
+
+        } else {
+
+            pid_t pid = fork();
+
+            if (pid == 0) {
+
+                execvp(args[0], args);
+
+                perror("Error executing command");
+
+                exit(1);
+
+            } else {
+
+                wait(NULL);
+
+            }
+
+        }
+
+    }
+
+
+
+    return 0;
+}
+
+
+
