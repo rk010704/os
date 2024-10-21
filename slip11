@@ -1,0 +1,402 @@
+Q.1 Write the simulation program for demand paging and show the page 
+ scheduling and total number of page faults according the LFU page 
+ replacement algorithm. Assume the memory of n frames.
+ Reference String : 3, 4, 5, 6, 3, 4, 7, 3, 4, 5, 6, 7, 2, 4, 6 
+ solution:-
+
+ #include <stdio.h>
+
+
+
+#define MAX_FRAMES 10
+
+#define MAX_REFERENCES 100
+
+
+
+// Function to find the least frequently used page
+
+int findLFU(int frames[], int freq[], int n) {
+
+    int minFreq = freq[0], minIndex = 0;
+
+    for (int i = 1; i < n; i++) {
+
+        if (freq[i] < minFreq) {
+
+            minFreq = freq[i];
+
+            minIndex = i;
+
+        }
+
+    }
+
+    return minIndex;
+
+}
+
+
+
+int main() {
+
+    int n, referenceString[MAX_REFERENCES], frames[MAX_FRAMES], freq[MAX_FRAMES];
+
+    int pageFaults = 0, found, index;
+
+
+
+    printf("Enter number of frames: ");
+
+    scanf("%d", &n);
+
+
+
+    printf("Enter reference string (-1 to stop): ");
+
+    int i = 0;
+
+    while (1) {
+
+        int page;
+
+        scanf("%d", &page);
+
+        if (page == -1) break;
+
+        referenceString[i++] = page;
+
+    }
+
+    int refCount = i;
+
+
+
+    // Initialize frames and frequency arrays
+
+    for (i = 0; i < n; i++) {
+
+        frames[i] = -1;
+
+        freq[i] = 0;
+
+    }
+
+
+
+    // Simulate LFU page replacement
+
+    for (i = 0; i < refCount; i++) {
+
+        int page = referenceString[i];
+
+        found = 0;
+
+
+
+        // Check if the page is already in a frame
+
+        for (int j = 0; j < n; j++) {
+
+            if (frames[j] == page) {
+
+                found = 1;
+
+                freq[j]++;  // Increment frequency
+
+                break;
+
+            }
+
+        }
+
+
+
+        if (!found) {
+
+            pageFaults++;
+
+
+
+            // Find a free frame or replace LFU page
+
+            if (frames[n - 1] == -1) {
+
+                for (int j = 0; j < n; j++) {
+
+                    if (frames[j] == -1) {
+
+                        frames[j] = page;
+
+                        freq[j] = 1;
+
+                        break;
+
+                    }
+
+                }
+
+            } else {
+
+                index = findLFU(frames, freq, n);  // Find the least frequently used page
+
+                frames[index] = page;              // Replace it with the new page
+
+                freq[index] = 1;
+
+            }
+
+        }
+
+
+
+        // Display current frames status
+
+        printf("\nFrames: ");
+
+        for (int j = 0; j < n; j++) {
+
+            if (frames[j] != -1)
+
+                printf("%d ", frames[j]);
+
+            else
+
+                printf("- ");
+
+        }
+
+    }
+
+
+
+    printf("\n\nTotal page faults: %d\n", pageFaults);
+
+
+
+    return 0;
+
+}
+
+
+Q.2 Write a C program to implement the shell. It should display the command 
+ prompt “myshell$”. Tokenize the command line and execute the given 
+ command by creating the child process. Additionally it should interpret the 
+ following ‘list’ commands as 
+ myshell$ list f dirname :- To print names of all the files in current 
+ directory.
+ myshell$ list n dirname :- To print the number of all entries in the current 
+ directory 
+ solution:-
+
+ #include <stdio.h>
+
+#include <stdlib.h>
+
+#include <string.h>
+
+#include <unistd.h>
+
+#include <sys/wait.h>
+
+#include <dirent.h>
+
+
+
+#define MAX_INPUT 100
+
+#define MAX_ARGS 10
+
+
+
+void list_files(const char *dirname) {
+
+    struct dirent *entry;
+
+    DIR *dp = opendir(dirname);
+
+
+
+    if (dp == NULL) {
+
+        perror("opendir");
+
+        return;
+
+    }
+
+
+
+    while ((entry = readdir(dp)) != NULL) {
+
+        if (entry->d_name[0] != '.') { // Skip hidden files
+
+            printf("%s\n", entry->d_name);
+
+        }
+
+    }
+
+
+
+    closedir(dp);
+
+}
+
+
+
+void list_count(const char *dirname) {
+
+    struct dirent *entry;
+
+    DIR *dp = opendir(dirname);
+
+    int count = 0;
+
+
+
+    if (dp == NULL) {
+
+        perror("opendir");
+
+        return;
+
+    }
+
+
+
+    while ((entry = readdir(dp)) != NULL) {
+
+        if (entry->d_name[0] != '.') { // Skip hidden files
+
+            count++;
+
+        }
+
+    }
+
+
+
+    closedir(dp);
+
+    printf("Total entries: %d\n", count);
+
+}
+
+
+
+int main() {
+
+    char input[MAX_INPUT];
+
+    char *args[MAX_ARGS];
+
+    char *token;
+
+
+
+    while (1) {
+
+        printf("myshell$ ");
+
+        fgets(input, sizeof(input), stdin); // Read input
+
+
+
+        // Remove newline character at the end
+
+        input[strcspn(input, "\n")] = 0;
+
+
+
+        // Tokenize the input
+
+        int i = 0;
+
+        token = strtok(input, " ");
+
+        while (token != NULL && i < MAX_ARGS - 1) {
+
+            args[i++] = token;
+
+            token = strtok(NULL, " ");
+
+        }
+
+        args[i] = NULL; // Null terminate the argument list
+
+
+
+        // Exit command
+
+        if (args[0] != NULL && strcmp(args[0], "exit") == 0) {
+
+            break;
+
+        }
+
+
+
+        // Handle "list" command
+
+        if (args[0] != NULL && strcmp(args[0], "list") == 0) {
+
+            if (args[1] != NULL && args[2] != NULL) {
+
+                if (strcmp(args[1], "f") == 0) {
+
+                    list_files(args[2]);
+
+                } else if (strcmp(args[1], "n") == 0) {
+
+                    list_count(args[2]);
+
+                } else {
+
+                    printf("Invalid option for list command\n");
+
+                }
+
+            } else {
+
+                printf("Usage: list <f|n> <dirname>\n");
+
+            }
+
+            continue;
+
+        }
+
+
+
+        // Fork and execute other commands
+
+        pid_t pid = fork();
+
+        if (pid == 0) {  // Child process
+
+            if (execvp(args[0], args) == -1) {
+
+                perror("execvp");
+
+            }
+
+            exit(EXIT_FAILURE);
+
+        } else if (pid < 0) {  // Fork failed
+
+            perror("fork");
+
+        } else {  // Parent process
+
+            wait(NULL);  // Wait for child to finish
+
+        }
+
+    }
+
+
+
+    return 0;
+
+}
