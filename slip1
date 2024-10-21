@@ -1,0 +1,129 @@
+Q.1 Write the simulation program to implement demand paging and show the 
+page scheduling and total number of page faults according to the LFU page 
+replacement algorithm. Assume the memory of n frames. 
+Reference String : 3,4,5,4,3,4,7,2,4,5,6,7,2,4,6 
+solution:-
+
+#include <stdio.h>
+#define MAX 100
+int findLFU(int freq[], int n, int frames[], int size) {
+int min = freq[frames[0]], minIndex = 0;
+for (int i = 1; i < size; i++) {
+if (freq[frames[i]] < min) {
+min = freq[frames[i]];
+minIndex = i;
+}
+}
+return minIndex;
+}
+int main() {
+int n, frames[MAX], freq[MAX] = {0}, pages[MAX], page_faults = 0, size = 0;
+printf("Enter the number of frames: ");
+scanf("%d", &n);
+printf("Enter the number of pages: ");
+int page_count;
+scanf("%d", &page_count);
+printf("Enter the reference string: ");
+for (int i = 0; i < page_count; i++) {
+scanf("%d", &pages[i]);
+}
+for (int i = 0; i < page_count; i++) {
+int page = pages[i];
+freq[page]++;
+int found = 0;
+for (int j = 0; j < size; j++) {
+if (frames[j] == page) {
+found = 1;
+break;
+}
+}
+if (!found) {
+if (size < n) {
+frames[size++] = page;
+} else {
+int lfuIndex = findLFU(freq, n, frames, size);
+frames[lfuIndex] = page;
+}
+page_faults++;
+}
+printf("Frames: ");
+for (int j = 0; j < size; j++) {
+printf("%d ", frames[j]);
+ }
+printf("\n");
+}
+printf("Total page faults: %d\n", page_faults);
+return 0;
+}
+
+
+
+
+Q.2 Write a C program to implement the shell which displays the command 
+prompt “myshell$”. It accepts the command, tokenize the command line and 
+execute it by creating the child process. Also implement the additional command 
+‘typeline’ as
+typeline +n filename :- To print first n lines in the file.
+typeline -a filename :- To print all lines in the file. 
+solution:-
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <fcntl.h>
+#define MAX 100
+void typeline(char *option, char *filename) {
+FILE *file = fopen(filename, "r");
+if (file == NULL) {
+perror("Error opening file");
+return;
+}
+char line[MAX];
+if (strcmp(option, "-a") == 0) {
+while (fgets(line, MAX, file) != NULL) {
+printf("%s", line);
+}
+} else if (option[0] == '+' && strlen(option) > 1) {
+int n = atoi(option + 1);
+for (int i = 0; i < n && fgets(line, MAX, file) != NULL; i++) {
+printf("%s", line);
+}
+}
+fclose(file);
+}
+int main() {
+char input[MAX];
+char *args[MAX];
+while (1) {
+printf("myshell$ ");
+fgets(input, MAX, stdin);
+input[strlen(input) - 1] = '\0'; // remove newline character
+int i = 0;
+args[i] = strtok(input, " ");
+while (args[i] != NULL) {
+i++;
+args[i] = strtok(NULL, " ");
+}
+if (strcmp(args[0], "exit") == 0) {
+break;
+} else if (strcmp(args[0], "typeline") == 0 && args[1] && args[2]) {
+typeline(args[1], args[2]);
+} else {
+pid_t pid = fork();
+if (pid == 0) {
+execvp(args[0], args);
+perror("Error executing command");
+exit(1);
+} else {
+wait(NULL);
+}
+}
+}
+return 0;
+}
+
+
+
