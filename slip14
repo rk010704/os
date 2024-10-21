@@ -1,0 +1,302 @@
+Q.1 Write a C program to implement the shell which displays the command 
+ prompt “myshell$”. It accepts the command, tokenize the command line and 
+ execute it by creating the child process. Also implement the additional 
+ command ‘typeline’ as 
+ typeline +n filename :- To print first n lines in the file. 
+ solution:-
+
+
+ 
+ #include <stdio.h>
+
+#include <stdlib.h>
+
+#include <string.h>
+
+#include <unistd.h>
+
+#include <sys/wait.h>
+
+
+
+#define MAX_INPUT 100
+
+#define MAX_ARGS 10
+
+
+
+// Function to print first 'n' lines from the file
+
+void typeline_n(const char *filename, int n) {
+
+    FILE *file = fopen(filename, "r");
+
+    char line[256];
+
+    int count = 0;
+
+
+
+    if (file == NULL) {
+
+        perror("Error opening file");
+
+        return;
+
+    }
+
+
+
+    // Read and print the first 'n' lines from the file
+
+    while (fgets(line, sizeof(line), file) && count < n) {
+
+        printf("%s", line);
+
+        count++;
+
+    }
+
+
+
+    fclose(file);
+
+}
+
+
+
+int main() {
+
+    char input[MAX_INPUT];
+
+    char *args[MAX_ARGS];
+
+    char *token;
+
+
+
+    while (1) {
+
+        // Display the prompt
+
+        printf("myshell$ ");
+
+        // Get input from the user
+
+        fgets(input, sizeof(input), stdin);
+
+        // Remove newline character from the input
+
+        input[strcspn(input, "\n")] = 0;
+
+
+
+        // Tokenize the input
+
+        int i = 0;
+
+        token = strtok(input, " ");
+
+        while (token != NULL && i < MAX_ARGS - 1) {
+
+            args[i++] = token;
+
+            token = strtok(NULL, " ");
+
+        }
+
+        args[i] = NULL;
+
+
+
+        // If no input is given, continue
+
+        if (args[0] == NULL) continue;
+
+
+
+        // Exit command
+
+        if (strcmp(args[0], "exit") == 0) {
+
+            break;
+
+        }
+
+
+
+        // Custom 'typeline' command implementation
+
+        if (strcmp(args[0], "typeline") == 0) {
+
+            if (args[1] != NULL && args[1][0] == '+' && args[2] != NULL) {
+
+                int n = atoi(&args[1][1]);  // Extract number from +n
+
+                typeline_n(args[2], n);     // Call function to print first 'n' lines
+
+            } else {
+
+                printf("Usage: typeline +n filename\n");
+
+            }
+
+            continue;
+
+        }
+
+
+
+        // Fork a child process to execute other commands
+
+        pid_t pid = fork();
+
+        if (pid == 0) {  // Child process
+
+            if (execvp(args[0], args) == -1) {
+
+                perror("Error executing command");
+
+            }
+
+            exit(EXIT_FAILURE);
+
+        } else if (pid > 0) {  // Parent process
+
+            wait(NULL);  // Wait for the child process to complete
+
+        } else {
+
+            perror("Fork failed");
+
+        }
+
+    }
+
+
+
+    return 0;
+
+}
+
+
+Q.2 Write a C program to simulate Non-preemptive Shortest Job First (SJF) –
+ scheduling. The arrival time and first CPU-burst of different jobs should be 
+ input to the system. Accept no. of Processes, arrival time and burst time. The 
+ output should give Gantt chart, turnaround time and waiting time for each 
+ process. Also find the average waiting time and turnaround time
+
+solution:-
+
+
+#include <stdio.h>
+
+
+
+int main() {
+
+    int n, i, j, time = 0;
+
+    printf("Enter the number of processes: ");
+
+    scanf("%d", &n);
+
+
+
+    int at[n], bt[n], wt[n], tat[n], process[n];
+
+    int completed = 0, total_wt = 0, total_tat = 0, min_bt, index;
+
+    int finished[n], current_time = 0;
+
+
+
+    for (i = 0; i < n; i++) {
+
+        printf("Enter arrival time and burst time for process P%d: ", i + 1);
+
+        scanf("%d %d", &at[i], &bt[i]);
+
+        process[i] = i + 1;
+
+        finished[i] = 0;
+
+    }
+
+
+
+    printf("\nGantt Chart:\n");
+
+    while (completed < n) {
+
+        min_bt = 9999;
+
+        index = -1;
+
+
+
+        for (i = 0; i < n; i++) {
+
+            if (at[i] <= current_time && !finished[i] && bt[i] < min_bt) {
+
+                min_bt = bt[i];
+
+                index = i;
+
+            }
+
+        }
+
+
+
+        if (index != -1) {
+
+            current_time += bt[index];
+
+            printf("| P%d (%d) ", process[index], current_time);
+
+            tat[index] = current_time - at[index];
+
+            wt[index] = tat[index] - bt[index];
+
+            total_tat += tat[index];
+
+            total_wt += wt[index];
+
+            finished[index] = 1;
+
+            completed++;
+
+        } else {
+
+            current_time++;
+
+        }
+
+    }
+
+    printf("|\n");
+
+
+
+    printf("\nProcess\tTurnaround Time\tWaiting Time\n");
+
+    for (i = 0; i < n; i++) {
+
+        printf("P%d\t%d\t\t%d\n", process[i], tat[i], wt[i]);
+
+    }
+
+
+
+    printf("\nAverage Turnaround Time: %.2f", (float)total_tat / n);
+
+    printf("\nAverage Waiting Time: %.2f\n", (float)total_wt / n);
+
+
+
+    return 0;
+
+}
+
+
